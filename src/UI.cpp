@@ -187,15 +187,7 @@ void UI::DrawImGuiMenu()
                 this->CreateSlicerBoxes();
                 this->delayDraw = 0;
             }
-            /*
-            if (this->slicerMenu)
-            {
-                if (ImGui::MenuItem("Cut Slices"))
-                {
-                    this->cutSlices = true;
-                }
-            }
-            */
+            
             ImGui::EndMenu();
         }
         if (ImGui::Button("Undo"))
@@ -211,6 +203,7 @@ void UI::DrawImGuiMenu()
         ImGui::SetNextWindowSize(ImVec2(500, 100));
         ImGui::Begin("Settings", &this->changeBackGroundColourMenu);
         ImGui::ColorEdit3("Set background colour", backgroundColour);
+
         if (ImGui::Button("Close"))
         {
             this->delayDraw = 0;
@@ -240,17 +233,12 @@ void UI::LoadImages(std::vector<std::string> names)
             imgData->img = img;
             imgData->texture.loadFromImage(img);
             this->imageData.emplace_back(std::move(imgData));
-
-
-#ifdef _DEBUG
-            std::cout << "Loaded image" << names[i] << "\n";
-#endif // _DEBUG
-
         }
     }
-    this->imageSprite.setTexture(this->imageData[this->activeImageID]->texture, true);
 
+    this->imageSprite.setTexture(this->imageData[this->activeImageID]->texture, true);
     this->imageSprite.setPosition(150, 100);
+
 
     this->CreateImagePalette();
 
@@ -303,8 +291,6 @@ void UI::CreateImagePalette()
             y_ = 0;
         }
     }
-
-    //this->CreateSlicerBoxes();
 }
 
 void UI::CreateSlicerBoxes()
@@ -377,6 +363,7 @@ void UI::CreateSlicerBoxes()
 
         int lowestTop = 200;
         int highestBottom = 0;
+
         // top
         for (int a = i; a < i + this->slicerWidth; a++)
         {
@@ -385,6 +372,7 @@ void UI::CreateSlicerBoxes()
             if (pixelsFoundAtTop[a] < lowestTop)
                 lowestTop = pixelsFoundAtTop[a];
         }
+
         // bottom black space
         for (int a = i; a < i + this->slicerWidth; a++)
         {
@@ -393,6 +381,7 @@ void UI::CreateSlicerBoxes()
             if (pixelsFoundAtBottom[a] > highestBottom)
                 highestBottom = pixelsFoundAtBottom[a];
         }
+
         slice.setPosition(slice.getPosition().x, slice.getPosition().y + lowestTop);
         slice.setSize(sf::Vector2f(this->slicerWidth, slice.getSize().y - lowestTop));
         slice.setSize(sf::Vector2f(this->slicerWidth, slice.getSize().y - (ref.getSize().y - highestBottom)));
@@ -402,12 +391,14 @@ void UI::CreateSlicerBoxes()
         
         if (this->cutSlices)
         {
+            if (slice.getSize().x < 0 || slice.getSize().y < 0) continue;
+
             if (!std::filesystem::exists("slices/"))
             {
                 if (std::filesystem::create_directory("slices/"))
                     this->popUpDialogs.emplace_back("Created slices/");
             }
-            if (slice.getSize().x < 0 || slice.getSize().y < 0) continue;
+
             sf::Image img;
             img.create(slice.getSize().x, slice.getSize().y, sf::Color(0, 0, 0));
             
@@ -419,6 +410,7 @@ void UI::CreateSlicerBoxes()
                 this->popUpDialogs.emplace_back("Failed to save slice " + this->imageData[this->activeImageID]->fileName + "-" + std::to_string(sliceID + 1) + ".bmp" + "\" (" + std::to_string(img.getSize().x) + "x" + std::to_string(img.getSize().y)+")");
                 continue;
             }
+
             int endX = slice.getSize().x;
 
             if (endX + slice.getPosition().x - 150 > ref.getSize().x)
@@ -427,12 +419,12 @@ void UI::CreateSlicerBoxes()
             }
 
             img.copy(ref, 0, 0, sf::IntRect(slice.getPosition().x - 150, slice.getPosition().y - 100, endX, slice.getSize().y));
-            //std::cout << "Saving..\n";
 
             if (!std::filesystem::exists("slices/"))
                 std::filesystem::create_directory("slices/");
 
             img.saveToFile("slices/" + this->imageData[this->activeImageID]->fileName+"-"+std::to_string(++sliceID) + ".bmp");
+            
             this->popUpDialogs.emplace_back("Saved Slice \"" + this->imageData[this->activeImageID]->fileName + "-" + std::to_string(sliceID) + ".bmp" + "\" (" + std::to_string(img.getSize().x) + "x" + std::to_string(img.getSize().y) + ")");
         }
     }
@@ -440,7 +432,7 @@ void UI::CreateSlicerBoxes()
     if (this->cutSlices)
     {
         this->cutSlices = false;
-        this->ShowPopUP("Slicing information");
+        this->ShowPopUP("Slicing Information");
     }
 
     this->UpdateSlicerVisualSelected();
@@ -454,6 +446,7 @@ void UI::ClickSelectPaletteColour(const sf::Color& colour)
         {
             pal.setOutlineThickness(1.5f);
             sf::Color px = pal.getFillColor();
+
             // Set the target color
             this->colourToReplace[0] = static_cast<float>(px.r) / 255.0f;
             this->colourToReplace[1] = static_cast<float>(px.g) / 255.0f;
@@ -500,14 +493,16 @@ void UI::Tick(sf::RenderWindow& window)
                 this->imageSprite.setScale(sf::Vector2f(this->imageScale, this->imageScale));
                 this->delayDraw = 0;
             }
+            
             ImGui::SameLine();
+
             if (ImGui::InputFloat("Scale", &this->imageScale))
             {
                 if (this->imageScale < MIN_SCALE) this->imageScale = MIN_SCALE;
                 else if (this->imageScale > MAX_SCALE) this->imageScale = MAX_SCALE;
+
                 this->imageSprite.setScale(sf::Vector2f(this->imageScale, this->imageScale));
 
-                // remove?
                 this->delayDraw = 2;
             }
             ImGui::End();
@@ -520,6 +515,7 @@ void UI::Tick(sf::RenderWindow& window)
             ImGui::SameLine();
             ImGui::Text("           ");
             ImGui::SameLine();
+
             if (ImGui::Button("Change Colour"))
             {
                 sf::Color colourToReplaceColor(
@@ -533,8 +529,10 @@ void UI::Tick(sf::RenderWindow& window)
                     static_cast<sf::Uint8>(this->newColour[1] * 255),
                     static_cast<sf::Uint8>(this->newColour[2] * 255)
                 );
+
                 this->UpdateColourChanges(colourToReplaceColor, newColourColor);
             }
+
             ImageData* imgData = this->imageData[this->activeImageID].get();
             std::string infoLine = imgData->fileName + "  - " + std::to_string(imgData->img.getSize().x) + "x" + std::to_string(imgData->img.getSize().y);
             ImGui::Text(infoLine.c_str());
@@ -548,12 +546,10 @@ void UI::Tick(sf::RenderWindow& window)
             if (ImGui::ColorEdit3("Colour to replace", this->colourToReplace, ImGuiColorEditFlags_NoOptions))
             {
                 this->delayDraw = 2;
-                this->delayDraw = 0;
             }
             if (ImGui::ColorEdit3("New colour", this->newColour))
             {
                 this->delayDraw = 2;
-                this->delayDraw = 0;
             }
 
             if (this->imageSprite.getTextureRect().width > 0)
@@ -569,19 +565,19 @@ void UI::Tick(sf::RenderWindow& window)
                 this->CreateSlicerBoxes();
                 this->delayDraw = 2;
             }
+
             ImGui::SameLine();
+
             if (ImGui::InputInt("SliceWidth", &this->slicerWidth))
             {
                 if (this->slicerWidth < MIN_SLICE_WIDTH) this->slicerWidth = MIN_SLICE_WIDTH;
                 else if (this->slicerWidth > MAX_SLICE_WIDTH) this->slicerWidth = MAX_SLICE_WIDTH;
                 
                 this->CreateSlicerBoxes();
-
-                // remove?
                 this->delayDraw = 2;
             }
             ImGui::End();
-            // Second overlay window
+
             ImGui::SetNextWindowPos(ImVec2(480, 20)); // Adjust the position to place it next to the first window
             ImGui::SetNextWindowSize(ImVec2(475, 53)); // Match the size (or use a different size if needed)
 
@@ -594,17 +590,21 @@ void UI::Tick(sf::RenderWindow& window)
             ImGui::SameLine();
             ImGui::Text(" | ");
             ImGui::SameLine();
+
             if (ImGui::Button("Cut Slices"))
             {
                 this->cutSlices = true;
                 this->CreateSlicerBoxes();
             }
+
             ImGui::SameLine();
             ImGui::Text(" |         ");
             ImGui::SameLine();
             ImGui::Text("Slice Height: ");
             ImGui::SameLine();
+
             int sliceHeight = this->slicerBoxes[this->activeSliceID].getSize().y;
+
             if (ImGui::InputInt("Slice Height", &sliceHeight))
             {
 
@@ -634,7 +634,7 @@ void UI::Tick(sf::RenderWindow& window)
                 window.draw(sliceBox);
 
             ImGui::End();
-            // Second overlay window
+
             ImGui::SetNextWindowPos(ImVec2(960, 20)); // Adjust the position to place it next to the first window
             ImGui::SetNextWindowSize(ImVec2(320, 53)); // Match the size (or use a different size if needed)
 
@@ -643,6 +643,7 @@ void UI::Tick(sf::RenderWindow& window)
             ImageData* imgDat = this->imageData[this->activeImageID].get();
 
             std::string infoLine = "Image Info: " + imgDat->fileName;
+
             ImGui::Text(infoLine.c_str());
 
             infoLine = "Dimensions: (" + std::to_string(imgDat->img.getSize().x) + "x" + std::to_string(imgDat->img.getSize().y)+")";
@@ -651,14 +652,6 @@ void UI::Tick(sf::RenderWindow& window)
         ImGui::End();
 
     }
-   
-
-
-
-
-
-
-
 
     // Show dialog
     if (ImGuiFileDialog::Instance()->Display("ChooseFileDlg"))
@@ -778,6 +771,7 @@ void UI::UpdateColourChanges(sf::Color colourToReplace, sf::Color newColour)
 
     this->imageSprite.setTexture(this->imageData[this->activeImageID]->texture, true);
     this->CreateImagePalette();
+
     this->delayDraw = 0;
 }
 
@@ -813,6 +807,7 @@ void UI::Save()
         this->ShowPopUP("Uhh Ohh..", { "You haven't changed anything yet." });
         return;
     }
+
     if (!std::filesystem::exists("recolours/"))
     {
         std::filesystem::create_directory("recolours/");
@@ -822,6 +817,7 @@ void UI::Save()
     for (auto& imgDat : this->imageData)
     {
         std::string name = "recolours/" + imgDat->fileName + "-recolour.bmp";
+
         if (imgDat->img.saveToFile(name))
         {
             this->popUpDialogs.emplace_back("Saved file " + name);
